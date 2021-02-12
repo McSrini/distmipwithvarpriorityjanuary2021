@@ -20,7 +20,7 @@ public class SequentialDriver {
     public static void main(String[] args) throws Exception {
         //
         SubTree tree = new SubTree (new HashSet<BranchingCondition> ()) ;
-        tree.sequentialSolve(FIFTY*TWO); // 100 30 minute iterations = 50 hours
+        tree.sequentialSolve(BILLION); // 100 30 minute iterations = 50 hours
         
     }
     

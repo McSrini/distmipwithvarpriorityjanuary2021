@@ -19,9 +19,9 @@ import java.util.Set;
  */
 public class PruneNodeCallback extends NodeCallback {
     
-    private Collection<NodeId> nodeIDs_for_pruning = null;
+    private Set<NodeId> nodeIDs_for_pruning = null;
     
-    public PruneNodeCallback (Collection<NodeId> nodes_for_pruning){
+    public PruneNodeCallback (Set<NodeId> nodes_for_pruning){
         this.nodeIDs_for_pruning = nodes_for_pruning;
     }
 

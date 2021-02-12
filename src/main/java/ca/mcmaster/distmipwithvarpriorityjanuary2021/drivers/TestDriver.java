@@ -107,7 +107,7 @@ public class TestDriver {
             someLeaf = fn;
         }
         
-        tree.prune(SubTree.mapOfFarmedNodeIDs.values());
+        tree.prune(SubTree.mapOfFarmedNodeIDs.keySet());
         
         SubTree newTree = new SubTree (someLeaf.varFixings) ;
         newTree.solve();

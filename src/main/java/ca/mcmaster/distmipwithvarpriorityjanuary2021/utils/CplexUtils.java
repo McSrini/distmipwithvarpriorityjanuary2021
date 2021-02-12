@@ -10,7 +10,10 @@ import static ca.mcmaster.distmipwithvarpriorityjanuary2021.Parameters.*;
 import ca.mcmaster.distmipwithvarpriorityjanuary2021.subtree.BranchingCondition;
 import ilog.concert.IloException;
 import ilog.concert.IloLPMatrix;
+import ilog.concert.IloLinearNumExpr;
+import ilog.concert.IloLinearNumExprIterator;
 import ilog.concert.IloNumVar;
+import ilog.concert.IloObjective;
 import ilog.cplex.IloCplex;
 import java.io.File;
 import java.io.FileInputStream;
@@ -21,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 /**
  *
@@ -68,6 +72,32 @@ public class CplexUtils {
         }
         
         return cplex;        
+    }
+    
+    public static boolean areAllObjectiveCoeffsIntgeral (IloCplex cplex) throws IloException {
+        
+        boolean result = true;
+        
+        //TreeMap<String, Double>  objectiveMap = new TreeMap<String, Double>();
+        
+        IloObjective  obj = cplex.getObjective();
+       
+        IloLinearNumExpr expr = (IloLinearNumExpr) obj.getExpr();
+                 
+        IloLinearNumExprIterator iter = expr.linearIterator();
+        while (iter.hasNext()) {
+           IloNumVar var = iter.nextNumVar();
+           double val = iter.getValue();
+           if (val > Math.floor(val)){
+               result = false;
+               break;
+           }
+           //objectiveMap.put(var.getName(),   val   );
+           
+        }
+        
+        return  result  ;        
+         
     }
     
     public static void applyVarFixings ( IloCplex cplex, Set<BranchingCondition> varFixings) throws IloException {

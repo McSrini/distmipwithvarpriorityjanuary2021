@@ -7,7 +7,9 @@ package ca.mcmaster.distmipwithvarpriorityjanuary2021.subtree;
 
 import static ca.mcmaster.distmipwithvarpriorityjanuary2021.Constants.*;
 import static ca.mcmaster.distmipwithvarpriorityjanuary2021.Parameters.MAX_THREADS;
+import static ca.mcmaster.distmipwithvarpriorityjanuary2021.Parameters.TARGET_BEST_BOUND_FOR_WORKERS;
 import ca.mcmaster.distmipwithvarpriorityjanuary2021.subtree.callbacks.*;
+import ca.mcmaster.distmipwithvarpriorityjanuary2021.utils.CplexUtils;
 import static ca.mcmaster.distmipwithvarpriorityjanuary2021.utils.CplexUtils.*;
 import ilog.concert.IloException;
 import ilog.cplex.IloCplex;
@@ -31,6 +33,8 @@ import org.apache.log4j.RollingFileAppender;
 public class SubTree {
     
     private IloCplex cplex;
+    private boolean isCompletelySolved = false;
+    private boolean areAllObjCoeffsIntegral = false;
        
     protected static Logger logger;
     
@@ -38,6 +42,10 @@ public class SubTree {
     public  static Set<BranchingCondition> myRootVarFixings =null;
  
     public static Map<String, NodeId > mapOfFarmedNodeIDs = null;
+    
+    
+    public SolveResult solveResult= null;
+    public Set<FarmedLeaf> farmedLeafs = null;
      
     static {
         logger=Logger.getLogger(SubTree.class);
@@ -61,11 +69,40 @@ public class SubTree {
     
     public SubTree (Set<BranchingCondition> varFixings) throws Exception {
         myRootVarFixings = varFixings;
-        cplex = getCPlex (varFixings );        
+        cplex = getCPlex (varFixings ); 
+        areAllObjCoeffsIntegral = CplexUtils.areAllObjectiveCoeffsIntgeral (cplex);
     }
     
-    public SolveResult solve ( ) throws IloException {
-        return sequentialSolve(ONE);
+    public boolean isCompletelySolved ( ) throws IloException {
+        return isCompletelySolved (BILLION)     ;
+    }
+    
+    public boolean isCompletelySolved ( double upperCutoff) throws IloException {
+        boolean condition1 = false;
+        boolean condition2 = false;
+        boolean condition3 = false;
+        if (!isCompletelySolved) {
+            condition1 =    (cplex.getStatus().equals( IloCplex.Status.Infeasible ) || cplex.getStatus().equals( IloCplex.Status.Optimal )); 
+            condition2 = TARGET_BEST_BOUND_FOR_WORKERS < cplex.getBestObjValue();
+            condition3 = areAllObjCoeffsIntegral && (   upperCutoff == Math.ceil(cplex.getBestObjValue() )) ;
+            boolean condition4 =  isWithinMIpGapThreshold(  upperCutoff);
+            isCompletelySolved = condition2 || condition1 || condition3|| condition4;
+        }
+        return isCompletelySolved;
+    }
+    
+    public void end () {
+        if (! isCompletelySolved) {
+            cplex.end ();
+        }
+        isCompletelySolved = true;
+    }
+    
+    public SolveResult solve ( double upperCutoff) throws IloException {
+        return sequentialSolve(ONE, upperCutoff);
+    }
+    public SolveResult solve (  ) throws IloException {
+        return sequentialSolve(ONE, BILLION);
     }
     
     public Set<FarmedLeaf> farm () throws IloException{
@@ -84,17 +121,18 @@ public class SubTree {
         
         mapOfFarmedNodeIDs = farmingCallback.mapOfFarmedLeaves.getFarmedLeaf_NodeIDs();
         
-        return farmingCallback.mapOfFarmedLeaves.getFarmedLeafs();
+        farmedLeafs = farmingCallback.mapOfFarmedLeaves.getFarmedLeafs();
+        return farmedLeafs;
     }
     
-    public void prune (Collection<NodeId> nodeIDs) throws IloException{
+    public void prune (Set<String> pruneList) throws IloException{
         //
-        Set<String> nodeNames = new HashSet<String> ();
-        for (NodeId nid: nodeIDs){
-            nodeNames.add (nid.toString() );
+        Set<NodeId> nodeIDs = new HashSet <NodeId> () ;
+        for (String str: pruneList){
+            nodeIDs.add (mapOfFarmedNodeIDs.get(str));
         }
         
-        cplex.use (new BranchHandler(nodeNames)) ;
+        cplex.use (new BranchHandler(pruneList)) ;
         cplex.use (new PruneNodeCallback(nodeIDs));
         cplex.setParam( IloCplex.Param.Threads, ONE);
         //allow unlimited time, although only a few seconds will be needed
@@ -107,7 +145,11 @@ public class SubTree {
         
     }
     
-    public SolveResult sequentialSolve (int iterationLimit) throws IloException {
+    public SolveResult sequentialSolve (int iterationLimit ) throws IloException {
+        return sequentialSolve (iterationLimit, BILLION) ;
+    }
+    
+    public SolveResult sequentialSolve (int iterationLimit,  double upperCutoff) throws IloException {
         
         SolveResult result = new SolveResult();
         
@@ -115,6 +157,7 @@ public class SubTree {
         
         cplex.setParam( IloCplex.Param.Threads, MAX_THREADS);
         cplex.setParam( IloCplex.Param.TimeLimit, SIXTY* SOLUTION_CYCLE_TIME_MINUTES );
+        cplex.setParam(IloCplex.Param.MIP.Tolerances.UpperCutoff, upperCutoff);
         
         for (int hour = ONE; hour <=iterationLimit ; hour ++){    
             
@@ -137,14 +180,49 @@ public class SubTree {
             result.numNodesExplored =cplex.getNnodes64();
             result.relativeMIPgap= relativeMipGap;
                            
-            if (cplex.getStatus().equals( IloCplex.Status.Infeasible ) || cplex.getStatus().equals( IloCplex.Status.Optimal )){  
-                cplex.end();
+            if ( this.isCompletelySolved(upperCutoff)){  
+                end();
                 break;
             }
 
         }     
         
+        solveResult = result;
         return result;
+    }
+    
+    private boolean isWithinMIpGapThreshold(double upperCutoff) throws IloException {   
+       
+        boolean condition1 =  cplex.getStatus().equals( IloCplex.Status.Infeasible) || 
+               cplex.getStatus().equals( IloCplex.Status.Optimal);
+        boolean condition2 = false;
+        
+        double localCutoff = BILLION;
+        if (upperCutoff < BILLION) localCutoff= upperCutoff;
+        if (cplex.getStatus().equals( IloCplex.Status.Feasible)){
+            double bestLocalSoln = cplex.getObjValue();
+            if (bestLocalSoln < localCutoff){
+                localCutoff = bestLocalSoln;
+            }
+        }
+        
+        if (  !condition1 && localCutoff  < BILLION){
+            //|bestbound-upperCutoff|/(1e-10+|upperCutoff|) 
+            double dist_mip_gap = Math.abs( cplex.getBestObjValue() - localCutoff);
+            
+            
+            
+            double denominator =  DOUBLE_ONE/ (BILLION) ;
+            denominator = denominator /TEN;
+            denominator = denominator +  Math.abs(localCutoff);
+            dist_mip_gap = dist_mip_gap /denominator;
+            logger.info ( " dist_mip_gap is " + dist_mip_gap );
+            condition2 = dist_mip_gap <  REALTIVE_MIP_GAP_THRESHOLD;
+        }
+        
+        
+        
+        return condition2 || condition1;
     }
     
 }
