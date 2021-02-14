@@ -69,6 +69,8 @@ public class Server {
         leafPool_FromRampUp= ramp_up.doRampUp ();
         globalIncombent = ramp_up.getSolutionValue();
         
+        if (USE_WELL_KNOWN_OPTIMAL_AT_START < BILLION) globalIncombent=USE_WELL_KNOWN_OPTIMAL_AT_START ;
+        
         ExecutorService executor = null;
         try (
                 //try with resources 
@@ -77,7 +79,8 @@ public class Server {
             ) {
             String hostname =  InetAddress.getLocalHost(). getHostName() ;
             System.out.println("The   server is running..." + hostname);
-            logger.info ("TARGET_BEST_BOUND_FOR_WORKERS "+ TARGET_BEST_BOUND_FOR_WORKERS) ;
+            logger.info ("TARGET_BEST_BOUND_FOR_WORKERS "+ TARGET_BEST_BOUND_FOR_WORKERS + 
+                    " USE_WELL_KNOWN_OPTIMAL_AT_START " + USE_WELL_KNOWN_OPTIMAL_AT_START) ;
             logger.info ("EMPAHSIS "+ Parameters.CPX_PARAM_MIPEMPHASIS) ;
             
             executor = Executors.newFixedThreadPool(  NUM_WORKERS );     

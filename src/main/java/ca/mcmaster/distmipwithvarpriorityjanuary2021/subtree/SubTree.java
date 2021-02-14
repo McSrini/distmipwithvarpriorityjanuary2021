@@ -161,7 +161,8 @@ public class SubTree {
         
         for (int hour = ONE; hour <=iterationLimit ; hour ++){    
             
-            cplex.solve();        
+            cplex.solve();    
+            
             double bestSolutionFound = BILLION;
             double relativeMipGap = BILLION;
             if (cplex.getStatus().equals( IloCplex.Status.Feasible ) || cplex.getStatus().equals( IloCplex.Status.Optimal )){
