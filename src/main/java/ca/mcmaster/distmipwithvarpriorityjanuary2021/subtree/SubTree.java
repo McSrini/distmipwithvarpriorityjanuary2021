@@ -84,7 +84,7 @@ public class SubTree {
         if (!isCompletelySolved) {
             condition1 =    (cplex.getStatus().equals( IloCplex.Status.Infeasible ) || cplex.getStatus().equals( IloCplex.Status.Optimal )); 
             condition2 = TARGET_BEST_BOUND_FOR_WORKERS < cplex.getBestObjValue();
-            condition3 = areAllObjCoeffsIntegral && (   upperCutoff == Math.ceil(cplex.getBestObjValue() )) ;
+            condition3 = areAllObjCoeffsIntegral && (   upperCutoff <= Math.ceil(cplex.getBestObjValue() )) ;
             boolean condition4 =  isWithinMIpGapThreshold(  upperCutoff);
             isCompletelySolved = condition2 || condition1 || condition3|| condition4;
         }
