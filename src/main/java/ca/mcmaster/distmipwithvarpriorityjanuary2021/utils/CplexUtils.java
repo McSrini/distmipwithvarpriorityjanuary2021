@@ -6,6 +6,8 @@
 package ca.mcmaster.distmipwithvarpriorityjanuary2021.utils;
 
 import static ca.mcmaster.distmipwithvarpriorityjanuary2021.Constants.ONE;
+import static ca.mcmaster.distmipwithvarpriorityjanuary2021.Constants.ZERO;
+import ca.mcmaster.distmipwithvarpriorityjanuary2021.Parameters;
 import static ca.mcmaster.distmipwithvarpriorityjanuary2021.Parameters.*;
 import ca.mcmaster.distmipwithvarpriorityjanuary2021.subtree.BranchingCondition;
 import ilog.concert.IloException;
@@ -13,6 +15,7 @@ import ilog.concert.IloLPMatrix;
 import ilog.concert.IloLinearNumExpr;
 import ilog.concert.IloLinearNumExprIterator;
 import ilog.concert.IloNumVar;
+import ilog.concert.IloNumVarType;
 import ilog.concert.IloObjective;
 import ilog.cplex.IloCplex;
 import java.io.File;
@@ -50,7 +53,10 @@ public class CplexUtils {
         cplex.setParam(IloCplex.Param.MIP.Strategy.Search, CPX_PARAM_MIPSEARCH ) ; 
         cplex.setParam(IloCplex.Param.MIP.Strategy.VariableSelect,  CPX_PARAM_VARSEL ) ; 
         
-                
+        if (Parameters.RANDOM_SEED> ZERO) cplex.setParam( IloCplex.Param.RandomSeed, Parameters.RANDOM_SEED);
+        
+        if (USE_MODERATE_CUTS)        setModerateCuts (cplex) ; 
+        
         if (USE_VAR_PRIORITY_LIST){
             File file = new File(PRIORITY_LIST_FILENAME ); 
             if (file.exists()) {
@@ -74,6 +80,26 @@ public class CplexUtils {
         return cplex;        
     }
     
+    
+    public static void setModerateCuts  (IloCplex cplex) throws IloException {
+        cplex.setParam( IloCplex.Param.MIP.Cuts.BQP  , ONE);
+        cplex.setParam( IloCplex.Param.MIP.Cuts.Cliques  , ONE);
+        cplex.setParam( IloCplex.Param.MIP.Cuts.Covers  , ONE);	
+        cplex.setParam( IloCplex.Param.MIP.Cuts.Disjunctive  , ONE);
+        cplex.setParam( IloCplex.Param.MIP.Cuts.FlowCovers  , ONE);
+        cplex.setParam( IloCplex.Param.MIP.Cuts.PathCut  , ONE);	
+        cplex.setParam( IloCplex.Param.MIP.Cuts.Gomory  , ONE);        
+        cplex.setParam( IloCplex.Param.MIP.Cuts.GUBCovers  , ONE);	 
+        cplex.setParam( IloCplex.Param.MIP.Cuts.Implied  , ONE);        
+        cplex.setParam( IloCplex.Param.MIP.Cuts.LocalImplied  , ONE);        
+        cplex.setParam( IloCplex.Param.MIP.Cuts.LiftProj  , ONE);        
+        cplex.setParam( IloCplex.Param.MIP.Cuts.MIRCut  , ONE);
+        cplex.setParam( IloCplex.Param.MIP.Cuts.MCFCut  , ONE);        
+        cplex.setParam( IloCplex.Param.MIP.Cuts.RLT  , ONE);
+        cplex.setParam( IloCplex.Param.MIP.Cuts.ZeroHalfCut  , ONE);
+    
+    }
+    
     public static boolean areAllObjectiveCoeffsIntgeral (IloCplex cplex) throws IloException {
         
         boolean result = true;
@@ -87,11 +113,19 @@ public class CplexUtils {
         IloLinearNumExprIterator iter = expr.linearIterator();
         while (iter.hasNext()) {
            IloNumVar var = iter.nextNumVar();
+           
+         
            double val = iter.getValue();
            if (val > Math.floor(val)){
                result = false;
                break;
            }
+           
+           if (var.getType().equals( IloNumVarType.Float)) {
+               result = false;
+               break;
+           }
+           
            //objectiveMap.put(var.getName(),   val   );
            
         }

@@ -5,6 +5,7 @@
  */
 package ca.mcmaster.distmipwithvarpriorityjanuary2021;
 
+import static ca.mcmaster.distmipwithvarpriorityjanuary2021.Parameters.MIP_NAME;
 import org.apache.log4j.Level;
 
 /**

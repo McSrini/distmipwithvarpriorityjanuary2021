@@ -81,7 +81,7 @@ public class Server {
             System.out.println("The   server is running..." + hostname);
             logger.info ("TARGET_BEST_BOUND_FOR_WORKERS "+ TARGET_BEST_BOUND_FOR_WORKERS + 
                     " USE_WELL_KNOWN_OPTIMAL_AT_START " + USE_WELL_KNOWN_OPTIMAL_AT_START) ;
-            logger.info ("EMPAHSIS "+ Parameters.CPX_PARAM_MIPEMPHASIS) ;
+            logger.info ("EMPAHSIS "+ Parameters.CPX_PARAM_MIPEMPHASIS + " RANDOM_SEED "+ RANDOM_SEED) ;
             
             executor = Executors.newFixedThreadPool(  NUM_WORKERS );     
             
