@@ -107,11 +107,15 @@ public class CplexUtils {
         //TreeMap<String, Double>  objectiveMap = new TreeMap<String, Double>();
         
         IloObjective  obj = cplex.getObjective();
+        
+        double constantterm = obj.getConstant();
+        boolean isConstantIntegral = (constantterm == Math.floor(constantterm));
+        if (! isConstantIntegral) result = false;
        
         IloLinearNumExpr expr = (IloLinearNumExpr) obj.getExpr();
                  
         IloLinearNumExprIterator iter = expr.linearIterator();
-        while (iter.hasNext()) {
+        while (iter.hasNext() && isConstantIntegral) {
            IloNumVar var = iter.nextNumVar();
            
          
@@ -130,6 +134,7 @@ public class CplexUtils {
            
         }
         
+        //if (result)  System.out.println("All Objective Coeffs are Intgeral") ;
         return  result  ;        
          
     }
