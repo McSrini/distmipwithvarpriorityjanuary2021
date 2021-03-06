@@ -6,6 +6,7 @@
 package ca.mcmaster.distmipwithvarpriorityjanuary2021.drivers;
 
 import static ca.mcmaster.distmipwithvarpriorityjanuary2021.Constants.*;
+import static ca.mcmaster.distmipwithvarpriorityjanuary2021.Parameters.USE_WELL_KNOWN_OPTIMAL_AT_START;
 import ca.mcmaster.distmipwithvarpriorityjanuary2021.subtree.BranchingCondition;
 import ca.mcmaster.distmipwithvarpriorityjanuary2021.subtree.SubTree;
 import java.util.HashSet;
@@ -20,7 +21,7 @@ public class SequentialDriver {
     public static void main(String[] args) throws Exception {
         //
         SubTree tree = new SubTree (new HashSet<BranchingCondition> ()) ;
-        tree.sequentialSolve(BILLION); // 100 30 minute iterations = 50 hours
+        tree.sequentialSolve(BILLION, USE_WELL_KNOWN_OPTIMAL_AT_START); // 100 30 minute iterations = 50 hours
         
     }
     
